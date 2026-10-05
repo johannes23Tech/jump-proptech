@@ -6,7 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, Link, useLocation, Router as WouterRouter } from 'wouter';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Building2, CalendarDays, ChevronDown, CircleHelp, ClipboardList, CreditCard, FileBarChart2, Home, LayoutDashboard, Menu, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, Wrench, X, RotateCcw } from 'lucide-react';
-import { demoData, emptyDataset, getPortfolioSummary, loadDataset, money, newId, saveDataset, validateUnitDraft, type Dataset, type Unit, type RentRecord, type MaintenanceRequest } from './domain';
+import { demoData, emptyDataset, getPortfolioSummary, getPrimaryTenancy, getTenantStatus, loadDataset, money, newId, reconcileUnitOccupancy, saveDataset, tenantDisplayName, tenantDisplayNameById, validateTenantDraft, validateUnitDraft, type Dataset, type Tenant, type Tenancy, type TenantDraft, type Unit, type RentRecord, type MaintenanceRequest } from './domain';
+import TenantWorkspace, { type TenantWorkspaceRow, type TenantWorkspaceSavePayload } from './components/TenantWorkspace';
 
 const queryClient = new QueryClient();
 type AppContextValue={data:Dataset; setData:Dispatch<SetStateAction<Dataset>>};
@@ -86,17 +87,16 @@ function Workspace(){
  </DataContext.Provider>
 }
 function PageFrame({page,children}:{page:string;children:ReactNode}){const meta=pageInfo[page];const Icon=meta.icon;return <div className="enter"><div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="mb-2 flex items-center gap-2 text-[9px] font-bold tracking-[.2em] text-[#a18a50]"><Icon size={13}/>{meta.kicker}</div><h1 className="font-display text-[27px] font-bold tracking-[-.045em] text-[#252821] sm:text-[34px]">{meta.title}</h1><p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-[#77756c]">{meta.description}</p></div>{page==='/dashboard'&&<div className="inline-flex items-center gap-2 self-start rounded-lg border border-[#e5dfd3] bg-white px-3 py-2 text-[11px] text-[#77756c] sm:self-auto"><CalendarDays size={14} className="text-[#aa8c4a]"/> Portfolio snapshot <span className="font-semibold text-[#34352f]">This month</span></div>}</div>{children}</div>}
-type Entity='property'|'unit'|'tenant'|'rent'|'maintenance';
+type Entity='property'|'unit'|'rent'|'maintenance';
 type Field={name:string;label:string;type?:string;required?:boolean;options?:{value:string;label:string}[];placeholder?:string;span?:boolean};
 function entityFields(entity:Entity,data:Dataset):Field[]{
- const properties=[{value:'',label:'Select a property'},...data.properties.map(x=>({value:x.id,label:x.name}))],units=data.units.map(x=>({value:x.id,label:x.number})),tenants=data.tenants.map(x=>({value:x.id,label:x.fullName}));
+ const properties=[{value:'',label:'Select a property'},...data.properties.map(x=>({value:x.id,label:x.name}))],units=data.units.map(x=>({value:x.id,label:x.number})),tenants=data.tenants.map(x=>({value:x.id,label:tenantDisplayName(x)}));
  if(entity==='property')return [{name:'name',label:'Property Name',required:true},{name:'address',label:'Address',required:true},{name:'city',label:'City',required:true,placeholder:'e.g. Rustenburg'},{name:'province',label:'Province',type:'select',required:true,options:[{value:'',label:'Select a province'},...['Gauteng','Western Cape','KwaZulu-Natal','Eastern Cape','Free State','Limpopo','Mpumalanga','North West','Northern Cape'].map(x=>({value:x,label:x}))]},{name:'type',label:'Property Type',type:'select',required:true,options:[{value:'',label:'Select a property type'},...['Residential property','Backroom','Rooms','Apartments','House'].map(x=>({value:x,label:x}))]},{name:'suburb',label:'Suburb'},{name:'postalCode',label:'Postal code'},{name:'description',label:'Description',type:'textarea',span:true}];
  if(entity==='unit')return [{name:'number',label:'Unit Number',required:true},{name:'propertyId',label:'Property',type:'select',required:true,options:properties},{name:'type',label:'Unit Type',type:'select',required:true,options:[{value:'',label:'Select a unit type'},...['Backroom','Single Room','Shared Room','Flat','Apartment','House'].map(x=>({value:x,label:x}))]},{name:'monthlyRent',label:'Monthly Rent (ZAR)',type:'number',required:true},{name:'occupancyStatus',label:'Occupancy Status',type:'select',required:true,options:[{value:'',label:'Select a status'},...['Vacant','Occupied','Maintenance'].map(x=>({value:x,label:x}))]},{name:'tenantId',label:'Tenant (optional)',type:'select',options:[{value:'',label:'No tenant assigned'},...tenants]}];
- if(entity==='tenant')return [{name:'fullName',label:'Full name',required:true},{name:'email',label:'Email',type:'email'},{name:'phone',label:'Phone number',type:'tel'},{name:'idNumber',label:'South African ID number'},{name:'unitId',label:'Unit',type:'select',required:true,options:units},{name:'leaseStart',label:'Lease starts',type:'date'},{name:'leaseEnd',label:'Lease ends',type:'date'},{name:'deposit',label:'Deposit (R)',type:'number'}];
  if(entity==='rent')return [{name:'unitId',label:'Unit',type:'select',required:true,options:units},{name:'tenantId',label:'Tenant',type:'select',required:true,options:tenants},{name:'month',label:'Rental month',type:'month',required:true},{name:'amount',label:'Amount (R)',type:'number',required:true},{name:'dueDate',label:'Due date',type:'date',required:true},{name:'status',label:'Record status',type:'select',options:['Pending','Paid','Overdue'].map(x=>({value:x,label:x}))},{name:'paymentMethod',label:'Payment method',type:'select',options:[{value:'',label:'Not recorded'},{value:'EFT',label:'EFT'},{value:'Cash',label:'Cash'},{value:'Other electronic payment',label:'Other electronic payment'}]},{name:'paidDate',label:'Recorded paid date',type:'date'}];
  return [{name:'propertyId',label:'Property',type:'select',required:true,options:properties},{name:'unitId',label:'Unit',type:'select',options:units},{name:'tenantId',label:'Tenant',type:'select',options:tenants},{name:'title',label:'Request title',required:true},{name:'description',label:'Description',type:'textarea',span:true},{name:'priority',label:'Priority',type:'select',options:['Low','Medium','High'].map(x=>({value:x,label:x}))},{name:'status',label:'Status',type:'select',options:['Open','In progress','Resolved'].map(x=>({value:x,label:x}))}];
 }
-const entityTitle:Record<Entity,string>={property:'property',unit:'unit',tenant:'tenant',rent:'rent record',maintenance:'maintenance request'};
+const entityTitle:Record<Entity,string>={property:'property',unit:'unit',rent:'rent record',maintenance:'maintenance request'};
 function RecordDialog({entity,initial,onClose,onSave}:{entity:Entity;initial?:Record<string,unknown>;onClose:()=>void;onSave:(payload:Record<string,unknown>)=>void}){
  const {data}=useAppData();const fields=entityFields(entity,data);const [error,setError]=useState('');
  function submit(event:FormEvent<HTMLFormElement>){
@@ -106,7 +106,7 @@ function RecordDialog({entity,initial,onClose,onSave}:{entity:Entity;initial?:Re
   const missing=fields.find(field=>field.required&&!String(result[field.name]??'').trim());
   if(missing){setError(`${missing.label} is required.`);return}
   const email=String(result.email??'');
-  if(entity==='tenant'&&email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError('Enter a valid email address.');return}
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError('Enter a valid email address.');return}
   if(entity==='unit'){
    const validation=validateUnitDraft(data,{propertyId:String(result.propertyId),number:String(result.number),monthlyRent:Number(result.monthlyRent),type:String(result.type),occupancyStatus:String(result.occupancyStatus) as Unit['occupancyStatus']},initial?.id?String(initial.id):undefined);
    if(validation){setError(validation);return}
@@ -131,7 +131,7 @@ function Dashboard(){const {data}=useAppData();const portfolio=getPortfolioSumma
  <div className="grid gap-3 sm:grid-cols-3"><QuickLink href="/properties" icon={Building2} title="Add a property" copy="Record a new address"/><QuickLink href="/units" icon={Home} title="Add a unit" copy="Set rent and occupancy"/><QuickLink href="/rent" icon={Plus} title="Add rent record" copy="Update the monthly ledger"/></div></div>}
 function QuickLink({href,icon:Icon,title,copy}:{href:string;icon:typeof Home;title:string;copy:string}){return <Link href={href} className="surface group flex items-center gap-3 rounded-xl p-4 transition hover:-translate-y-0.5 hover:border-[#c8b67f]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f2eddf] text-[#987d43]"><Icon size={17}/></span><span className="flex-1"><span className="block text-[11px] font-semibold">{title}</span><span className="mt-1 block text-[9px] text-[#8a877d]">{copy}</span></span><ArrowUpRight size={14} className="text-[#aaa69a] transition group-hover:text-[#92743b]"/></Link>}
 function EmptyState({title,text,action}:{title:string;text:string;action?:ReactNode}){return <div className="flex flex-col items-center justify-center px-6 py-12 text-center"><div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f0e6] text-[#a38c53]"><Building2 size={20}/></div><div className="font-display text-sm font-bold">{title}</div><p className="mt-1 max-w-xs text-[11px] leading-relaxed text-[#89867d]">{text}</p>{action&&<div className="mt-4">{action}</div>}</div>}
-function useEntityActions(entity:Entity,key:keyof Pick<Dataset,'properties'|'units'|'tenants'|'rent'|'maintenance'>){
+function useEntityActions(entity:Entity,key:keyof Pick<Dataset,'properties'|'units'|'rent'|'maintenance'>){
  const {data,setData}=useAppData();const [dialog,setDialog]=useState<{initial?:Record<string,unknown>}|null>(null);const [successMessage,setSuccessMessage]=useState('');
  function save(payload:Record<string,unknown>){
   const isEdit=!!dialog?.initial;const record={...payload,id:isEdit?dialog?.initial?.id:newId(entity[0]),...(entity==='property'?{createdAt:String(dialog?.initial?.createdAt??new Date().toISOString().slice(0,10))}:{}),demo:false} as never;
@@ -162,7 +162,85 @@ function Units(){
  return <><SuccessNotice message={successMessage}/><Card className="overflow-hidden"><div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-6"><div><h2 className="font-display text-[14px] font-bold">{data.units.length} rental units</h2><p className="mt-1 text-[10px] text-[#89867d]">Monthly rent, property association and occupancy</p>{!data.properties.length&&<p className="mt-2 text-[10px] font-medium text-[#9b594e]">Add a property before creating a unit.</p>}</div><div className="flex flex-col gap-2 sm:flex-row"><SearchFilter search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All statuses','Vacant','Occupied','Maintenance']}/><ActionButton onClick={()=>setDialog({})}><Plus size={14}/> Add Unit</ActionButton></div></div>
   {items.length?<div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead><tr className="border-y border-[#eee9df] bg-[#fbfaf7] text-[9px] font-bold tracking-[.08em] text-[#929087]"><th className="px-6 py-3">UNIT</th><th className="px-4 py-3">PROPERTY</th><th className="px-4 py-3">TYPE</th><th className="px-4 py-3">MONTHLY RENT</th><th className="px-4 py-3">OCCUPANCY</th><th className="px-6 py-3">ACTIONS</th></tr></thead><tbody>{items.map(u=><tr key={u.id} className="border-b border-[#f0ede6] last:border-0 hover:bg-[#fcfbf8]"><td className="px-6 py-4"><div className="text-[11px] font-semibold">{u.number}</div><div className="mt-1 flex items-center gap-2 text-[9px] text-[#969287]">{data.tenants.find(t=>t.id===u.tenantId)?.fullName||'No tenant assigned'}<OriginTag demo={u.demo}/></div></td><td className="px-4 py-4 text-[10px] text-[#625f57]">{data.properties.find(p=>p.id===u.propertyId)?.name||'Unlinked property'}</td><td className="px-4 py-4 text-[10px] text-[#77746b]">{u.type}</td><td className="px-4 py-4 text-[11px] font-semibold">{money(u.monthlyRent)}</td><td className="px-4 py-4"><StatusPill>{u.occupancyStatus}</StatusPill></td><td className="px-6 py-4"><div className="flex items-center gap-2"><button onClick={()=>quickStatus(u)} className="text-[9px] font-semibold text-[#92733b] hover:underline">{u.occupancyStatus==='Occupied'?'Mark vacant':u.occupancyStatus==='Maintenance'?'Mark vacant':'Mark occupied'}</button><RowMenu onEdit={()=>setDialog({initial:{...u,monthlyRent:String(u.monthlyRent)}})} onDelete={()=>remove(u.id)}/></div></td></tr>)}</tbody></table></div>:<EmptyState title="No units to show" text={data.properties.length?'Add a rental unit and connect it to a property.':'Add a property first, then connect rental units to it.'}/>}</Card>{dialog&&<RecordDialog entity="unit" initial={dialog.initial} onClose={()=>setDialog(null)} onSave={save}/>}</>
 }
-function Tenants(){const {data,dialog,setDialog,save,remove}=useEntityActions('tenant','tenants');const [search,setSearch]=useState('');const [filter,setFilter]=useState('All tenants');const items=data.tenants.filter(t=>(filter==='All tenants'||data.units.find(u=>u.id===t.unitId)?.occupancyStatus===filter)&&`${t.fullName} ${t.email} ${t.phone}`.toLowerCase().includes(search.toLowerCase()));return <><div className="mb-4 grid gap-3 sm:grid-cols-3"><MiniStat label="CURRENT TENANTS" value={`${data.tenants.length}`} sub="Tenant records" icon={Users}/><MiniStat label="ACTIVE LEASES" value={`${data.tenants.filter(t=>!t.leaseEnd||t.leaseEnd>=new Date().toISOString().slice(0,10)).length}`} sub="Based on lease end dates" icon={ClipboardList}/><MiniStat label="DEPOSITS RECORDED" value={money(data.tenants.reduce((sum,t)=>sum+t.deposit,0))} sub="Recorded deposit amounts" icon={Wallet}/></div><Card className="overflow-hidden"><div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-6"><div><h2 className="font-display text-[14px] font-bold">Tenant directory</h2><p className="mt-1 text-[10px] text-[#89867d]">Contact details and lease dates</p></div><div className="flex flex-col gap-2 sm:flex-row"><SearchFilter search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All tenants','Occupied','Vacant']}/><ActionButton onClick={()=>setDialog({})}><Plus size={14}/> Add tenant</ActionButton></div></div>{items.length?<div className="overflow-x-auto"><table className="w-full min-w-[730px] text-left"><thead><tr className="border-y border-[#eee9df] bg-[#fbfaf7] text-[9px] font-bold tracking-[.08em] text-[#929087]"><th className="px-6 py-3">TENANT</th><th className="px-4 py-3">UNIT / PROPERTY</th><th className="px-4 py-3">LEASE TERM</th><th className="px-4 py-3">DEPOSIT</th><th className="px-6 py-3">STATUS</th></tr></thead><tbody>{items.map(t=>{const u=data.units.find(x=>x.id===t.unitId);return <tr key={t.id} className="border-b border-[#f0ede6] last:border-0"><td className="px-6 py-4"><div className="text-[11px] font-semibold">{t.fullName}</div><div className="mt-1 text-[9px] text-[#89867d]">{t.email||t.phone||'No contact details'}</div></td><td className="px-4 py-4"><div className="text-[10px] font-medium">{u?.number||'Unassigned'}</div><div className="mt-1 text-[9px] text-[#89867d]">{data.properties.find(p=>p.id===u?.propertyId)?.name||'—'}</div></td><td className="px-4 py-4 text-[10px] text-[#726f66]">{t.leaseStart||'—'} <span className="text-[#b2aea3]">to</span> {t.leaseEnd||'—'}</td><td className="px-4 py-4 text-[10px] font-semibold">{money(t.deposit)}</td><td className="px-6 py-3"><div className="flex items-center gap-2"><StatusPill>{u?.occupancyStatus||'Unassigned'}</StatusPill><RowMenu onEdit={()=>setDialog({initial:{...t,deposit:String(t.deposit)}})} onDelete={()=>remove(t.id)}/></div></td></tr>})}</tbody></table></div>:<EmptyState title="No tenants found" text="Add a tenant record to keep lease details together."/>}</Card>{dialog&&<RecordDialog entity="tenant" initial={dialog.initial} onClose={()=>setDialog(null)} onSave={save}/>}</>}
+function Tenants(){
+ const {data,setData}=useAppData();
+ const [message,setMessage]=useState('');
+ const [messageType,setMessageType]=useState<'saved'|'error'>('saved');
+ const currentTenancies=data.tenancies;
+ const rows:TenantWorkspaceRow[]=data.tenants.map(tenant=>{
+  const tenancy=getPrimaryTenancy(data,tenant.id)??null;
+  const unit=tenancy?data.units.find(item=>item.id===tenancy.unitId):undefined;
+  const property=tenancy?data.properties.find(item=>item.id===tenancy.propertyId):undefined;
+  return {
+   id:tenant.id,
+   firstName:tenant.firstName,
+   lastName:tenant.lastName,
+   phone:tenant.privateProfile.phoneNumber,
+   propertyLabel:property?.name??'',
+   unitLabel:unit?.number??'',
+   status:getTenantStatus(data,tenant.id),
+   currentTenancyStatus:tenancy?.status??null,
+   monthlyRent:tenancy?.monthlyRent,
+   demo:tenant.demo,
+   profile:tenant.privateProfile,
+   tenancy,
+  };
+ });
+ function saveTenant(payload:TenantWorkspaceSavePayload):string|null{
+  const tenantId=payload.tenantId??newId('t');
+  const tenancyId=payload.tenancyId??payload.tenancy.id??newId('tn');
+  const privateProfile={
+   ...payload.profile.privateProfile,
+   classification:'sensitive-personal-information' as const,
+   processingPurpose:'tenancy-management' as const,
+  };
+  const draft:TenantDraft={
+   firstName:payload.profile.firstName,
+   lastName:payload.profile.lastName,
+   privateProfile,
+   propertyId:payload.tenancy.propertyId,
+   unitId:payload.tenancy.unitId,
+   moveInDate:payload.tenancy.moveInDate,
+   leaseStart:payload.tenancy.leaseStart,
+   leaseEnd:payload.tenancy.leaseEnd,
+   monthlyRent:payload.tenancy.monthlyRent,
+   depositAmount:payload.tenancy.depositAmount,
+   paymentDueDay:payload.tenancy.paymentDueDay,
+   status:payload.tenancy.status,
+  };
+  const validation=validateTenantDraft(data,draft,payload.tenantId,payload.tenancyId);
+  if(validation)return validation;
+  const previousTenant=data.tenants.find(item=>item.id===tenantId);
+  const previousTenancy=data.tenancies.find(item=>item.id===tenancyId);
+  const tenant:Tenant={id:tenantId,...payload.profile,fullName:`${payload.profile.firstName} ${payload.profile.lastName}`.trim(),privateProfile,demo:payload.profile.demo??previousTenant?.demo};
+  const tenancy:Tenancy={
+   ...payload.tenancy,
+   id:tenancyId,
+   tenantId,
+   createdAt:previousTenancy?.createdAt??new Date().toISOString().slice(0,10),
+   demo:payload.tenancy.demo??previousTenancy?.demo,
+  };
+  const tenants=previousTenant?data.tenants.map(item=>item.id===tenantId?tenant:item):[...data.tenants,tenant];
+  const tenancies=previousTenancy?data.tenancies.map(item=>item.id===tenancyId?tenancy:item):[...data.tenancies,tenancy];
+  const nextData={...data,tenants,tenancies,units:reconcileUnitOccupancy(data.units,tenancies)};
+  setData(nextData);
+  const saved=saveDataset(nextData);
+  setMessageType('saved');
+  setMessage(`Tenant ${previousTenant?'updated':'added'}${saved?' and saved in this browser.':' for this session; browser storage is unavailable.'}`);
+  return null;
+ }
+ function endTenancy(tenantId:string){
+  const current=getPrimaryTenancy(data,tenantId);
+  if(!current)return;
+  const tenancies=data.tenancies.map(item=>item.id===current.id?{...item,status:'Ended' as const}:item);
+  const nextData={...data,tenancies,units:reconcileUnitOccupancy(data.units,tenancies)};
+  setData(nextData);
+  const saved=saveDataset(nextData);
+  setMessageType('saved');
+  setMessage(`Tenancy ended and its unit was freed${saved?' in this browser.':'.'}`);
+ }
+ return <TenantWorkspace rows={rows} properties={data.properties} units={data.units} currentTenancies={currentTenancies} onSave={saveTenant} onEndTenancy={endTenancy} message={message} messageType={messageType}/>;
+}
 function Rent(){const {data,dialog,setDialog,save,remove,setData}=useEntityActions('rent','rent');const [search,setSearch]=useState('');const [filter,setFilter]=useState('All statuses');const items=data.rent.filter(r=>(filter==='All statuses'||r.status===filter)&&`${data.tenants.find(t=>t.id===r.tenantId)?.fullName} ${data.units.find(u=>u.id===r.unitId)?.number} ${r.month}`.toLowerCase().includes(search.toLowerCase()));const paid=items.filter(r=>r.status==='Paid').reduce((a,r)=>a+r.amount,0);function markPaid(r:RentRecord){setData(d=>({...d,rent:d.rent.map(x=>x.id===r.id?{...x,status:'Paid',paidDate:new Date().toISOString().slice(0,10),demo:false}:x)}))}return <><div className="mb-4 grid gap-3 sm:grid-cols-3"><MiniStat label="RECORDED AS PAID" value={money(paid)} sub="Filtered records · not bank verified" icon={Wallet}/><MiniStat label="PENDING" value={money(items.filter(r=>r.status==='Pending').reduce((a,r)=>a+r.amount,0))} sub={`${items.filter(r=>r.status==='Pending').length} rent records`} icon={Activity}/><MiniStat label="OVERDUE" value={money(items.filter(r=>r.status==='Overdue').reduce((a,r)=>a+r.amount,0))} sub={`${items.filter(r=>r.status==='Overdue').length} rent records`} icon={ArrowDownRight}/></div><Card className="overflow-hidden"><div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-6"><div><h2 className="font-display text-[14px] font-bold">Rental ledger</h2><p className="mt-1 text-[10px] text-[#89867d]">Manual records only · no payments are processed here</p></div><div className="flex flex-col gap-2 sm:flex-row"><SearchFilter search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All statuses','Paid','Pending','Overdue']}/><ActionButton onClick={()=>setDialog({})}><Plus size={14}/> Add rent record</ActionButton></div></div>{items.length?<div className="overflow-x-auto"><table className="w-full min-w-[780px] text-left"><thead><tr className="border-y border-[#eee9df] bg-[#fbfaf7] text-[9px] font-bold tracking-[.08em] text-[#929087]"><th className="px-6 py-3">TENANT / UNIT</th><th className="px-4 py-3">RENTAL MONTH</th><th className="px-4 py-3">DUE DATE</th><th className="px-4 py-3">AMOUNT</th><th className="px-4 py-3">METHOD</th><th className="px-4 py-3">STATUS</th><th className="px-6 py-3">ACTIONS</th></tr></thead><tbody>{items.map(r=><tr key={r.id} className="border-b border-[#f0ede6] last:border-0"><td className="px-6 py-4"><div className="text-[11px] font-semibold">{data.tenants.find(t=>t.id===r.tenantId)?.fullName||'Unassigned tenant'}</div><div className="mt-1 text-[9px] text-[#89867d]">{data.units.find(u=>u.id===r.unitId)?.number||'Unassigned unit'}</div></td><td className="px-4 py-4 text-[10px]">{formatMonth(r.month)}</td><td className="px-4 py-4 text-[10px] text-[#77746b]">{r.dueDate||'—'}</td><td className="px-4 py-4 text-[11px] font-semibold">{money(r.amount)}</td><td className="px-4 py-4 text-[10px] text-[#77746b]">{r.paymentMethod||'—'}</td><td className="px-4 py-4"><StatusPill>{r.status}</StatusPill></td><td className="px-6 py-3"><div className="flex items-center gap-2">{r.status!=='Paid'&&<button onClick={()=>markPaid(r)} title="Record as paid (local note only)" className="text-[9px] font-semibold text-[#8b7137] hover:underline">Record paid</button>}<RowMenu onEdit={()=>setDialog({initial:{...r,amount:String(r.amount)}})} onDelete={()=>remove(r.id)}/></div></td></tr>)}</tbody></table></div>:<EmptyState title="No rent records found" text="Add a monthly rent record to start tracking payment status."/>}<div className="border-t border-[#eee9df] bg-[#fbfaf7] px-5 py-3 text-[9px] text-[#8c7950] sm:px-6">Payment status reflects a landlord-entered record only. Jump PropTech does not move or confirm money.</div></Card>{dialog&&<RecordDialog entity="rent" initial={dialog.initial} onClose={()=>setDialog(null)} onSave={save}/>}</>}
 function Maintenance(){const {data,dialog,setDialog,save,remove,setData}=useEntityActions('maintenance','maintenance');const [search,setSearch]=useState('');const [filter,setFilter]=useState('All statuses');const items=data.maintenance.filter(m=>(filter==='All statuses'||m.status===filter)&&`${m.title} ${data.properties.find(p=>p.id===m.propertyId)?.name} ${m.description}`.toLowerCase().includes(search.toLowerCase()));function stepStatus(m:MaintenanceRequest){const next=m.status==='Open'?'In progress':m.status==='In progress'?'Resolved':'Open';setData(d=>({...d,maintenance:d.maintenance.map(x=>x.id===m.id?{...x,status:next,demo:false}:x)}))}return <><Card className="overflow-hidden"><div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-6"><div><h2 className="font-display text-[14px] font-bold">Maintenance requests</h2><p className="mt-1 text-[10px] text-[#89867d]">Track a request through its current status</p></div><div className="flex flex-col gap-2 sm:flex-row"><SearchFilter search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All statuses','Open','In progress','Resolved']}/><ActionButton onClick={()=>setDialog({})}><Plus size={14}/> Add request</ActionButton></div></div>{items.length?<div className="divide-y divide-[#eee9df] border-t border-[#eee9df]">{items.map(m=><article key={m.id} className="flex flex-col gap-4 p-5 transition hover:bg-[#fdfcf9] sm:flex-row sm:items-start sm:px-6"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${m.priority==='High'?'bg-[#f8e8e5] text-[#aa574c]':m.priority==='Medium'?'bg-[#f5efdf] text-[#9b8045]':'bg-[#edf1e9] text-[#627b5b]'}`}><Wrench size={18}/></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-[13px] font-bold">{m.title}</h3><StatusPill>{m.priority}</StatusPill><StatusPill>{m.status}</StatusPill></div><p className="mt-2 max-w-3xl text-[10px] leading-relaxed text-[#76736a]">{m.description||'No description provided.'}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-[#969287]"><span>{data.properties.find(p=>p.id===m.propertyId)?.name||'Property not assigned'}</span><span>{data.units.find(u=>u.id===m.unitId)?.number||'Unit not assigned'}</span><span>{m.createdAt}</span></div></div><div className="flex items-center gap-3 sm:pt-1"><button onClick={()=>stepStatus(m)} className="text-[10px] font-semibold text-[#91743b] hover:underline">{m.status==='Open'?'Start work':m.status==='In progress'?'Mark resolved':'Reopen'}</button><RowMenu onEdit={()=>setDialog({initial:{...m}})} onDelete={()=>remove(m.id)}/></div></article>)}</div>:<EmptyState title="No maintenance requests" text="Capture a repair or upkeep request when something needs attention." action={<ActionButton onClick={()=>setDialog({})}><Plus size={14}/> Add request</ActionButton>}/>}</Card>{dialog&&<RecordDialog entity="maintenance" initial={dialog.initial} onClose={()=>setDialog(null)} onSave={save}/>}</>}
 function Reports(){

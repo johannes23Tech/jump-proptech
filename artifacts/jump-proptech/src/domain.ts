@@ -14,7 +14,7 @@ export type TenantPrivateProfile = {
  classification:'sensitive-personal-information';
  processingPurpose:'tenancy-management';
 };
-export type Tenant = { id:string; firstName:string; lastName:string; privateProfile:TenantPrivateProfile; demo?:boolean };
+export type Tenant = { id:string; firstName:string; lastName:string; fullName?:string; privateProfile:TenantPrivateProfile; demo?:boolean };
 export type Tenancy = {
  id:string;
  tenantId:string;
@@ -62,10 +62,10 @@ export const demoData:Dataset={
    {id:'u5',propertyId:'p3',number:'Room 4',type:'Single Room',monthlyRent:4900,occupancyStatus:'Occupied',tenantId:'t4',demo:true},
  ],
  tenants:[
-    {id:'t1',firstName:'Lerato',lastName:'Mokoena',privateProfile:privateProfile({email:'lerato.m@example.co.za',phoneNumber:'082 541 9086',whatsappNumber:'082 541 9086'}),demo:true},
-    {id:'t2',firstName:'Thabo',lastName:'Nkosi',privateProfile:privateProfile({email:'thabo.n@example.co.za',phoneNumber:'076 230 1174',whatsappNumber:'076 230 1174'}),demo:true},
-    {id:'t3',firstName:'Amara',lastName:'Jacobs',privateProfile:privateProfile({email:'amara.j@example.co.za',phoneNumber:'083 419 2257',whatsappNumber:'083 419 2257'}),demo:true},
-    {id:'t4',firstName:'Sipho',lastName:'Dlamini',privateProfile:privateProfile({email:'sipho.d@example.co.za',phoneNumber:'071 906 4382',whatsappNumber:'071 906 4382'}),demo:true},
+     {id:'t1',firstName:'Lerato',lastName:'Mokoena',fullName:'Lerato Mokoena',privateProfile:privateProfile({email:'lerato.m@example.co.za',phoneNumber:'082 541 9086',whatsappNumber:'082 541 9086'}),demo:true},
+     {id:'t2',firstName:'Thabo',lastName:'Nkosi',fullName:'Thabo Nkosi',privateProfile:privateProfile({email:'thabo.n@example.co.za',phoneNumber:'076 230 1174',whatsappNumber:'076 230 1174'}),demo:true},
+     {id:'t3',firstName:'Amara',lastName:'Jacobs',fullName:'Amara Jacobs',privateProfile:privateProfile({email:'amara.j@example.co.za',phoneNumber:'083 419 2257',whatsappNumber:'083 419 2257'}),demo:true},
+     {id:'t4',firstName:'Sipho',lastName:'Dlamini',fullName:'Sipho Dlamini',privateProfile:privateProfile({email:'sipho.d@example.co.za',phoneNumber:'071 906 4382',whatsappNumber:'071 906 4382'}),demo:true},
   ],
   tenancies:[
     {id:'tn1',tenantId:'t1',propertyId:'p1',unitId:'u1',moveInDate:'2026-01-01',leaseStart:'2026-01-01',leaseEnd:'2026-12-31',monthlyRent:6800,depositAmount:6800,paymentDueDay:1,status:'Active',createdAt:'2026-01-01',demo:true},
@@ -87,6 +87,7 @@ export const demoData:Dataset={
 };
 export const emptyDataset:Dataset={properties:[],units:[],tenants:[],tenancies:[],rent:[],maintenance:[],profile:{name:'',email:'',phone:'',company:''}};
 export function tenantDisplayName(tenant:Tenant){return `${tenant.firstName} ${tenant.lastName}`.trim()}
+export function tenantDisplayNameById(data:Pick<Dataset,'tenants'>,tenantId:string){const tenant=data.tenants.find(item=>item.id===tenantId);return tenant?tenantDisplayName(tenant):''}
 const currentTenancyStatuses:TenancyStatus[]=['Active','Notice given'];
 export function getPrimaryTenancy(data:Pick<Dataset,'tenancies'>,tenantId:string):Tenancy|undefined{
  const tenantTenancies=data.tenancies.filter(tenancy=>tenancy.tenantId===tenantId);
@@ -210,6 +211,7 @@ function normalizeTenant(record:Record<string,unknown>):Tenant{
   id:String(record.id??newId('t')),
   firstName,
   lastName,
+   fullName:`${firstName} ${lastName}`.trim(),
   privateProfile:privateProfile({
    idNumberOrPassport:isDemo?'':String(oldProfile.idNumberOrPassport??record.idNumber??''),
    phoneNumber:String(oldProfile.phoneNumber??record.phone??''),

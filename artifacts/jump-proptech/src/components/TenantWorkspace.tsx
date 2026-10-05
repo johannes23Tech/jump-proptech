@@ -81,7 +81,7 @@ export type TenantWorkspaceProps = {
   properties: TenantWorkspaceProperty[];
   units: TenantWorkspaceUnit[];
   currentTenancies: TenantWorkspaceTenancy[];
-  onSave: (payload: TenantWorkspaceSavePayload) => void;
+  onSave: (payload: TenantWorkspaceSavePayload) => string | null;
   onEndTenancy: (tenantId: string) => void;
   message?: string;
   messageType?: 'saved' | 'error';
@@ -171,8 +171,15 @@ export default function TenantWorkspace({
     const tenancySource = panel?.row ? (panel.row.tenancy ?? tenancyByTenant.get(panel.row.id)) : undefined;
     const propertyId = text('propertyId');
     const unitId = text('unitId');
+    const moveInDate = text('moveInDate');
+    const leaseStart = text('leaseStart');
+    const leaseEnd = text('leaseEnd');
     if (!text('firstName') || !text('lastName')) {
       setFormError('Enter the tenant’s first and last name.');
+      return;
+    }
+    if (!text('phoneNumber')) {
+      setFormError('Enter a phone number.');
       return;
     }
     if (!propertyId || !units.some((unit) => unit.id === unitId && unit.propertyId === propertyId)) {
@@ -192,6 +199,19 @@ export default function TenantWorkspace({
       setFormError('Enter a valid email address.');
       return;
     }
+    const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00`));
+    if (!validDate(moveInDate) || !validDate(leaseStart) || !validDate(leaseEnd)) {
+      setFormError('Enter a valid move-in date, lease start, and lease end.');
+      return;
+    }
+    if (leaseStart > leaseEnd) {
+      setFormError('Lease end date must be on or after the lease start date.');
+      return;
+    }
+    if (moveInDate > leaseEnd) {
+      setFormError('Move-in date cannot be after the lease end date.');
+      return;
+    }
     const profile: TenantWorkspaceProfile = {
       idNumberOrPassport: text('idNumberOrPassport'),
       phoneNumber: text('phoneNumber'),
@@ -207,16 +227,16 @@ export default function TenantWorkspace({
       ...(panel?.row?.id ? { tenantId: panel.row.id } : {}),
       propertyId,
       unitId,
-      moveInDate: text('moveInDate'),
-      leaseStart: text('leaseStart'),
-      leaseEnd: text('leaseEnd'),
+      moveInDate,
+      leaseStart,
+      leaseEnd,
       monthlyRent: number('monthlyRent'),
       depositAmount: number('depositAmount'),
       paymentDueDay: number('paymentDueDay'),
       status: text('tenancyStatus') as TenantWorkspaceTenancy['status'],
       ...(panel?.row?.demo ? { demo: true } : {}),
     };
-    onSave({
+    const saveError = onSave({
       ...(panel?.row?.id ? { tenantId: panel.row.id } : {}),
       ...(tenancySource?.id ? { tenancyId: tenancySource.id } : {}),
       profile: {
@@ -227,6 +247,10 @@ export default function TenantWorkspace({
       },
       tenancy,
     });
+    if (saveError) {
+      setFormError(saveError);
+      return;
+    }
     setPanel(null);
   }
 
@@ -236,7 +260,7 @@ export default function TenantWorkspace({
     <div className="flex flex-col gap-4 rounded-2xl border border-[#e8e2d5] bg-[#fbfaf6] p-4 shadow-[0_8px_28px_rgba(42,37,25,.035)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0ead7] text-[#92783e]"><UserRound size={19}/></div>
-        <div><p className="text-[12px] font-semibold text-[#34352f]">Tenant records, kept in one place</p><p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[#817e74]">Manage the people, their current home, and lease details. Personal information is private workspace data.</p></div>
+        <div><p className="text-[12px] font-semibold text-[#34352f]">Tenant records, kept in one place</p><p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[#817e74]">Manage tenant profiles and tenancy history. ID and contact details stay out of the directory view.</p></div>
       </div>
       <button type="button" data-testid="button-add-tenant" onClick={() => openPanel({ mode: 'add' })} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#262a2d] px-4 text-[12px] font-bold text-[#faf7ee] transition hover:bg-[#414344]"><Plus size={16}/> Add tenant</button>
     </div>
@@ -290,7 +314,7 @@ export default function TenantWorkspace({
     </div>
 
     <div className="flex items-start gap-2 rounded-xl border border-[#e4dcc6] bg-[#f4f0e4] px-3.5 py-3 text-[10px] leading-relaxed text-[#766b4f]" data-testid="tenant-privacy-warning">
-      <LockKeyhole size={14} className="mt-0.5 shrink-0 text-[#9b8346]"/><p><strong className="font-bold">Privacy & storage.</strong> Keep identity and contact details private. This workspace may store records in this browser; avoid shared devices and do not enter information you do not need.</p>
+      <LockKeyhole size={14} className="mt-0.5 shrink-0 text-[#9b8346]"/><p><strong className="font-bold">Privacy & storage.</strong> Tenant records are currently stored in this browser, not in Supabase. Do not enter real ID or passport numbers until tenant data is connected to the secured database.</p>
     </div>
 
     {panel && <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#17191d]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setPanel(null); }}>
@@ -344,7 +368,7 @@ export default function TenantWorkspace({
               <div className="grid gap-3.5 rounded-xl border border-[#e9e4d9] bg-white p-4 sm:grid-cols-2">
                 <Field label="First name"><input name="firstName" required defaultValue={panel.row?.firstName ?? ''} className={inputClass} autoComplete="given-name"/></Field>
                 <Field label="Last name"><input name="lastName" required defaultValue={panel.row?.lastName ?? ''} className={inputClass} autoComplete="family-name"/></Field>
-                <Field label="Phone number"><input name="phoneNumber" type="tel" defaultValue={panel.row?.profile.phoneNumber ?? panel.row?.phone ?? ''} className={inputClass} autoComplete="tel"/></Field>
+                <Field label="Phone number"><input name="phoneNumber" type="tel" required defaultValue={panel.row?.profile.phoneNumber ?? panel.row?.phone ?? ''} className={inputClass} autoComplete="tel"/></Field>
                 <Field label="WhatsApp number"><input name="whatsappNumber" type="tel" defaultValue={panel.row?.profile.whatsappNumber ?? ''} className={inputClass}/></Field>
                 <Field label="Email address"><input name="email" type="email" defaultValue={panel.row?.profile.email ?? ''} className={inputClass} autoComplete="email"/></Field>
                 <Field label="Employer"><input name="employer" defaultValue={panel.row?.profile.employer ?? ''} className={inputClass}/></Field>
@@ -363,9 +387,9 @@ export default function TenantWorkspace({
                 <Field label="Monthly rent (ZAR)"><input name="monthlyRent" type="number" min="0" step="0.01" required defaultValue={activePanelTenancy?.monthlyRent ?? ''} className={inputClass} inputMode="decimal"/></Field>
                 <Field label="Deposit amount (ZAR)"><input name="depositAmount" type="number" min="0" step="0.01" defaultValue={activePanelTenancy?.depositAmount ?? ''} className={inputClass} inputMode="decimal"/></Field>
                 <Field label="Rent due day"><input name="paymentDueDay" type="number" min="1" max="31" defaultValue={activePanelTenancy?.paymentDueDay ?? 1} className={inputClass} inputMode="numeric"/></Field>
-                <Field label="Move-in date"><input name="moveInDate" type="date" defaultValue={activePanelTenancy?.moveInDate ?? ''} className={inputClass}/></Field>
-                <Field label="Lease start"><input name="leaseStart" type="date" defaultValue={activePanelTenancy?.leaseStart ?? ''} className={inputClass}/></Field>
-                <Field label="Lease end"><input name="leaseEnd" type="date" defaultValue={activePanelTenancy?.leaseEnd ?? ''} className={inputClass}/></Field>
+                <Field label="Move-in date"><input name="moveInDate" type="date" required defaultValue={activePanelTenancy?.moveInDate ?? ''} className={inputClass}/></Field>
+                <Field label="Lease start"><input name="leaseStart" type="date" required defaultValue={activePanelTenancy?.leaseStart ?? ''} className={inputClass}/></Field>
+                <Field label="Lease end"><input name="leaseEnd" type="date" required defaultValue={activePanelTenancy?.leaseEnd ?? ''} className={inputClass}/></Field>
               </div>
               {properties.length === 0 && <p className="mt-2 text-[10px] text-[#8c7040]">Add a property before assigning a tenancy.</p>}
             </section>
