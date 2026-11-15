@@ -1,0 +1,7 @@
+[deploy]
+  startCommand = "pnpm --filter @workspace/api-server run start"
+  healthcheckPath = "/api/healthz"
+  healthcheckTimeout = 100
+
+[build]
+  builder = "nixpacks"
