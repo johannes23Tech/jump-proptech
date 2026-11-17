@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { db, users, type UserRow } from '@workspace/db';
 import { loginSchema, registerSchema } from '@workspace/contracts';
-import { asyncHandler, conflict, parseBody, userId } from '../lib/http';
+import { asyncHandler, conflict, HttpError, parseBody, userId } from '../lib/http';
+import { logger } from '../lib/logger';
 import { supabaseAdmin } from '../lib/supabase';
 import { loadWorkspace } from '../lib/workspace';
 import { requireUser } from '../middleware/auth';
@@ -36,7 +37,9 @@ router.post(
     });
 
     if (authError || !authData?.user) {
-      throw new Error(authError?.message ?? 'Failed to create account.');
+      const message = authError?.message ?? 'Failed to create account.';
+      logger.error({ supabaseError: authError?.message ?? 'no user' }, 'Supabase createUser failed');
+      throw new HttpError(400, message);
     }
 
     // Create row in our users table
@@ -77,7 +80,9 @@ router.post(
     });
 
     if (error || !sessionData?.session?.access_token) {
-      throw new Error('Incorrect email or password.');
+      const message = error?.message ?? 'Incorrect email or password.';
+      logger.error({ supabaseError: error?.message ?? 'no session' }, 'Supabase signInWithPassword failed');
+      throw new HttpError(400, message);
     }
 
     // Look up our internal user record
