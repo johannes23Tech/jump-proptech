@@ -4,11 +4,29 @@
   publish = "dist/public"
 
 [build.environment]
-  # Vite intentionally inlines VITE_* env vars into the client bundle at build
-  # time. The Supabase anon key is a PUBLIC key (safe to ship to browsers),
-  # so flagging it is a false positive. NODE_ENV matches inside third-party
-  # plugin node_modules are also false positives. Tell the scanner to skip
-  # these keys permanently.
+  # ─────────────────────────────────────────────────────────────────────
+  # Secrets scanning configuration (permanent fix, lives in the repo)
+  # ─────────────────────────────────────────────────────────────────────
+  # SECRETS_SCAN_OMIT_KEYS tells the Netlify scanner to skip checking the
+  # VALUES of exactly the env var names listed below — permanently, in
+  # the repo, so it survives any future redeploy or Netlify UI change.
+  #
+  # Why each key is omitted:
+  #   VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+  #     Vite intentionally inlines VITE_* env vars into the client bundle
+  #     at build time. The Supabase ANON key is a PUBLIC key — it is
+  #     designed to ship to browsers (Row Level Security protects the
+  #     data, not key secrecy), so flagging it is a false positive.
+  #   SUPABASE_URL / SUPABASE_ANON_KEY
+  #     Same false positive — matched only because their values equal
+  #     the VITE_ variants that end up in the bundle.
+  #   NODE_ENV
+  #     The scanner matched the word "production" inside README/LICENSE
+  #     files of installed Netlify plugins' node_modules — repo noise,
+  #     not actual secrets.
+  #
+  # REAL secrets (DATABASE_URL, service keys, API tokens) are NOT listed
+  # here and remain fully scanned — a leak of those still fails the build.
   SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_URL,NODE_ENV"
 
 [dev]
