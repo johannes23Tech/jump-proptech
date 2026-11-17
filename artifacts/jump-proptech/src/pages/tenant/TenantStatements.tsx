@@ -77,9 +77,9 @@ export default function TenantStatements() {
           <div>
             <div className="text-[#c5a55a] text-[11px] font-bold tracking-[.2em] uppercase">Statements</div>
             <h1 className="mt-1 font-display text-[28px] font-extrabold">Rent Statements</h1>
-            <p className="mt-1 text-white/60">Download rent statements as PDF</p>
+            <p className="mt-1 opacity-60 text-white">Download rent statements as PDF</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c5a55a]/20 text-[15px] font-bold text-[#e4ce97]">RS</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c5a55a] text-[15px] font-bold text-[#e4ce97]">RS</div>
         </div>
       </div>
       <div className="rounded-xl border border-[#e5dfd1] bg-white p-5">

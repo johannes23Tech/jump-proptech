@@ -36,7 +36,7 @@ export default function AuthScreen() {
           <div className="font-display text-[30px] font-extrabold tracking-[-.04em]">
             jump<span className="text-[#c5a55a]">.</span>
           </div>
-          <div className="mt-1 text-[11px] font-semibold tracking-[.18em] text-white/45">
+          <div className="mt-1 text-[11px] font-semibold tracking-[.18em] text-white opacity-45">
             PROPERTY WORKSPACE
           </div>
         </div>
@@ -44,15 +44,15 @@ export default function AuthScreen() {
           <h1 className="font-display text-[43px] font-extrabold leading-tight tracking-[-.04em]">
             Every property, tenant and rent record in one secure workspace.
           </h1>
-          <p className="mt-4 max-w-md text-[16px] leading-relaxed text-white/55">
+          <p className="mt-4 max-w-md text-[16px] leading-relaxed text-white opacity-55">
             Jump PropTech keeps your portfolio on your own server. Sign in to
             manage properties, units, leases, rent records and maintenance.
           </p>
-          <div className="mt-8 border-l-2 border-[#d2b66f] pl-3 text-[14px] text-white/50">
+          <div className="mt-8 border-l-2 border-[#d2b66f] pl-3 text-[14px] text-white opacity-50">
             Your records are private to your account.
           </div>
         </div>
-        <div className="text-[13px] text-white/30">
+        <div className="text-[13px] text-white opacity-30">
           Jump Living · Property workspace
         </div>
       </aside>

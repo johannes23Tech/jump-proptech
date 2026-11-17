@@ -116,7 +116,7 @@ const dateLabel = (value?: string) => {
 };
 
 const inputClass =
-  "mt-1.5 block min-h-11 w-full rounded-lg border border-[#ded9cd] bg-white px-3 py-2.5 text-[16px] font-normal text-[#34352f] placeholder:text-[#aaa69b] focus:border-[#b89a55] focus:outline-none focus:ring-2 focus:ring-[#d7c591]/40";
+  "mt-1.5 block min-h-11 w-full rounded-lg border border-[#ded9cd] bg-white px-3 py-2.5 text-[16px] font-normal text-[#34352f] placeholder:text-[#aaa69b] focus:border-[#b89a55] focus:outline-none focus:ring-2 focus:ring-[#d7c591] opacity-40";
 const labelClass = "block text-[14px] font-semibold text-[#57574f]";
 
 function Field({
@@ -371,7 +371,7 @@ export default function TenantWorkspace({
             type="button"
             data-testid={`filter-summary-${status.toLowerCase()}`}
             onClick={() => setFilter(filter === status ? "All" : status)}
-            className={`flex min-h-[76px] items-center justify-between rounded-xl border px-4 text-left transition ${filter === status ? "border-[#c9b477] bg-[#f5f0e2]" : "border-[#e8e2d5] bg-white/75 hover:bg-white"}`}
+            className={`flex min-h-[76px] items-center justify-between rounded-xl border px-4 text-left transition ${filter === status ? "border-[#c9b477] bg-[#f5f0e2]" : "border-[#e8e2d5] bg-white opacity-75 hover:bg-white"}`}
           >
             <span>
               <span className="block text-[13px] font-bold uppercase tracking-[.12em] text-[#8c897f]">
@@ -572,7 +572,7 @@ export default function TenantWorkspace({
 
       {panel && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#17191d]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#17191d] opacity-55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setPanel(null);
           }}
@@ -1094,7 +1094,7 @@ export default function TenantWorkspace({
                     </p>
                   )}
                 </div>
-                <div className="sticky bottom-0 flex shrink-0 justify-end gap-2 border-t border-[#e9e4d9] bg-[#fbfaf6]/95 px-5 py-3.5 backdrop-blur sm:px-7">
+                <div className="sticky bottom-0 flex shrink-0 justify-end gap-2 border-t border-[#e9e4d9] bg-[#fbfaf6] opacity-95 px-5 py-3.5 backdrop-blur sm:px-7">
                   <button
                     type="button"
                     data-testid="button-cancel-tenant"

@@ -26,7 +26,7 @@ export default function TechTickets() {
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-[#f7f5ef]">
-      <div className="h-[2px] w-32 overflow-hidden rounded-full bg-[#e5dfd1]"><span className="block h-full w-1/2 animate-pulse rounded-full bg-[#b79850]" /></div>
+      <div className="h-[2px] w-32 overflow-hidden rounded-full bg-[#e5dfd1]"><span className="block h-full w-full animate-pulse rounded-full bg-[#b79850]" /></div>
     </div>
   );
 
@@ -37,9 +37,9 @@ export default function TechTickets() {
           <div>
             <div className="text-[#c5a55a] text-[11px] font-bold tracking-[.2em] uppercase">Maintenance Queue</div>
             <h1 className="mt-1 font-display text-[28px] font-extrabold">All Tickets</h1>
-            <p className="mt-1 text-white/60">Manage and resolve maintenance requests</p>
+            <p className="mt-1 opacity-60 text-white">Manage and resolve maintenance requests</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c5a55a]/20 text-[15px] font-bold text-[#e4ce97]">TQ</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c5a55a] text-[15px] font-bold text-[#e4ce97]">TQ</div>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export default function TechTickets() {
         </div>
       </div>
       {selected && (
-        <div className="fixed inset-0 z-50 bg-[#12151b]/50 backdrop-blur-sm" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 z-50 bg-[#12151b] backdrop-blur-sm" onClick={() => setSelected(null)}>
           <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white border-l border-[#e5dfd1] p-6 max-h-full overflow-y-auto flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="font-display text-[18px] font-bold text-[#252821]">Ticket Details</h2>
@@ -104,7 +104,7 @@ export default function TechTickets() {
                   <div>
                     <div className="text-[11px] font-bold uppercase text-[#99958a]">Status</div>
                     <select className="w-full rounded-lg border border-[#e5dfd1] bg-[#faf9f5] px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#b79850]" defaultValue={tickets.find((t) => t.id === selected)!.status} onChange={(e: any) => {
-                      // Status update would go here - needs PATCH /tech/tickets/:id
+                      // Status update would go here - needs PATCH tech/tickets/:id
                     }}>
                       <option value="Open">Open</option>
                       <option value="In progress">In progress</option>
