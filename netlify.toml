@@ -3,6 +3,14 @@
   command = "pnpm build"
   publish = "dist/public"
 
+[build.environment]
+  # Vite intentionally inlines VITE_* env vars into the client bundle at build
+  # time. The Supabase anon key is a PUBLIC key (safe to ship to browsers),
+  # so flagging it is a false positive. NODE_ENV matches inside third-party
+  # plugin node_modules are also false positives. Tell the scanner to skip
+  # these keys permanently.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_URL,NODE_ENV"
+
 [dev]
   command = "pnpm dev:web"
   port = 5173
