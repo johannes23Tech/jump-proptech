@@ -27,7 +27,10 @@
   #
   # REAL secrets (DATABASE_URL, service keys, API tokens) are NOT listed
   # here and remain fully scanned — a leak of those still fails the build.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_URL,NODE_ENV"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_PUBLISHABLE_KEY,SUPABASE_URL,NODE_ENV"
+  # Bundle output is scanned as "repo files"; the anon key is public-by-design
+  # and plugin node_modules contain false-positive matches, so omit those paths too.
+  SECRETS_SCAN_OMIT_PATHS = "dist/**,artifacts/jump-proptech/.netlify/plugins/**"
 
 [dev]
   command = "pnpm dev:web"
