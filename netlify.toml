@@ -1,6 +1,9 @@
 [build]
   base = "artifacts/jump-proptech"
-  command = "pnpm build"
+  # verify-netlify-env.mjs fails the deploy if API_URL is missing/malformed —
+  # otherwise netlify.toml's /api/* proxy redirect is silently disabled and
+  # every API request falls through to the SPA's index.html.
+  command = "node ../../scripts/verify-netlify-env.mjs && pnpm build"
   publish = "dist"
 
 [build.environment]

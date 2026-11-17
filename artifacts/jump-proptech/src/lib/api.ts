@@ -45,11 +45,31 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     return undefined as T;
   }
 
-  const payload = await response.json().catch(() => null);
+  // Guard against the /api proxy falling through to the SPA: when the Netlify
+  // redirect to the backend is missing or misconfigured, /api/* returns the
+  // app's index.html with status 200. Parsing that as JSON used to yield null,
+  // which crashed the workspace loader with a misleading boot error.
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new ApiError(
+      502,
+      `The API returned ${contentType || "an unknown content type"} instead of JSON. ` +
+        "The /api proxy is not connected — set API_URL on Netlify to the backend URL and redeploy.",
+    );
+  }
+
+  const payload: unknown = await response.json().catch(() => null);
+
+  if (payload === null || typeof payload !== "object") {
+    throw new ApiError(
+      502,
+      "The API returned a malformed JSON response.",
+    );
+  }
 
   if (!response.ok) {
     const message =
-      payload && typeof payload === "object" && "error" in payload
+      "error" in payload
         ? String((payload as { error: unknown }).error)
         : `Request failed with status ${response.status}.`;
     throw new ApiError(response.status, message);
