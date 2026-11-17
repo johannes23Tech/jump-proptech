@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "buildCommand": "cd ../.. && pnpm install --frozen-lockfile --prod=false --filter @workspace/api-server... && pnpm --filter @workspace/api-server run build"
+  },
+  "deploy": {
+    "startCommand": "node --enable-source-maps ./dist/index.mjs",
+    "healthcheckPath": "/api/healthz",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "on_failure",
+    "restartPolicyMaxRetries": 3
+  }
+}
