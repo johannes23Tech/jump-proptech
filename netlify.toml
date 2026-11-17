@@ -1,9 +1,13 @@
 [build]
   base = "artifacts/jump-proptech"
-  # verify-netlify-env.mjs fails the deploy if API_URL is missing/malformed —
-  # otherwise netlify.toml's /api/* proxy redirect is silently disabled and
-  # every API request falls through to the SPA's index.html.
-  command = "node ../../scripts/verify-netlify-env.mjs && pnpm build"
+  # 1. verify-netlify-env.mjs fails fast if API_URL is missing/malformed.
+  # 2. pnpm build produces dist/ (cleaning it first).
+  # 3. write-api-redirects.mjs generates dist/_redirects with the REAL API_URL:
+  #    Netlify does not interpolate env vars in netlify.toml [[redirects]]
+  #    ("to = ${API_URL}..." stays a literal string), so the proxy rule must
+  #    be written into the publish directory instead. Vite cleans dist on
+  #    every build, which is why this step runs after the build.
+  command = "node ../../scripts/verify-netlify-env.mjs && pnpm build && node ../../scripts/write-api-redirects.mjs"
   publish = "dist"
 
 [build.environment]
@@ -46,11 +50,13 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-[[redirects]]
-  from = "/api/*"
-  to = "${API_URL}/api/:splat"
-  status = 200
-  conditions = {Method = ["GET", "POST", "PATCH", "DELETE"]}
+# NOTE: the /api/* proxy is NOT declared here — netlify.toml cannot
+# interpolate environment variables into [[redirects]] ("to = ${API_URL}"
+# would stay a literal string and never reach the backend). Instead,
+# scripts/write-api-redirects.mjs generates dist/_redirects at build time:
+#   /api/* <API_URL>/api/:splat 200
+# _redirects rules are processed before netlify.toml rules, so it takes
+# precedence over the SPA catch-all below.
 
 [[redirects]]
   from = "/*"

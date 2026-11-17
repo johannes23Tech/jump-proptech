@@ -33,7 +33,7 @@ if (!apiUrl) {
   if (cleaned.endsWith("/")) {
     problems.push(
       `API_URL ends with a trailing slash ("${cleaned.slice(-6)}") — remove it. ` +
-        "netlify.toml already appends '/api/:splat', so the value must be the bare origin, " +
+        "scripts/write-api-redirects.mjs appends '/api/:splat', so the value must be the bare origin, " +
         "e.g. https://<service>.up.railway.app with nothing after it.",
     );
   }
