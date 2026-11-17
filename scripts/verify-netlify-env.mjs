@@ -18,22 +18,36 @@ if (!apiUrl) {
       "scoped to Builds, with the backend's public URL (e.g. https://<service>.up.railway.app).",
   );
 } else {
-  if (apiUrl.endsWith("/")) {
+  // Show the tail of the stored value so a stray slash/space is visible in
+  // build logs without exposing the full host.
+  const tail = apiUrl.length > 12 ? `…${apiUrl.slice(-12)}` : apiUrl;
+  console.log(`[verify-netlify-env] API_URL value ends with: "${tail}"`);
+
+  if (apiUrl !== apiUrl.trim()) {
     problems.push(
-      "API_URL must not end with a trailing slash — netlify.toml already appends '/api/:splat'.",
+      "API_URL has leading or trailing whitespace. Edit the value in the Netlify UI and remove any extra spaces.",
+    );
+  }
+
+  const cleaned = apiUrl.trim();
+  if (cleaned.endsWith("/")) {
+    problems.push(
+      `API_URL ends with a trailing slash ("${cleaned.slice(-6)}") — remove it. ` +
+        "netlify.toml already appends '/api/:splat', so the value must be the bare origin, " +
+        "e.g. https://<service>.up.railway.app with nothing after it.",
     );
   }
 
   let parsed;
   try {
-    parsed = new URL(apiUrl);
+    parsed = new URL(cleaned);
   } catch {
     parsed = null;
   }
 
   if (!parsed || (parsed.protocol !== "https:" && parsed.protocol !== "http:")) {
     problems.push(
-      `API_URL is not a valid absolute URL: "${apiUrl}". It must start with https:// (or http://).`,
+      `API_URL is not a valid absolute URL: "${cleaned}". It must start with https:// (or http://).`,
     );
   }
 }
