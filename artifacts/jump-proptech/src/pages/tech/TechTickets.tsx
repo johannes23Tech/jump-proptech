@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useWorkspace } from "@/state/app";
 import { api } from "@/lib/api";
-import { HardHat, Clock } from "lucide-react";
 
 export default function TechTickets() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -116,7 +115,7 @@ export default function TechTickets() {
             )}
           </div>
         </div>
-      )
+      )}
     </div>
   );
 }
@@ -125,7 +124,7 @@ function StatCard({ title, value, color }: any) {
   return (
     <div className="rounded-xl border border-[#e5dfd1] bg-white p-4">
       <div className="text-[11px] font-bold uppercase tracking-[.16em] text-[#99958a]">{title}</div>
-      <div className="mt-1 font-display text-[18px] font-bold text-[#252821] {color}">{value}</div>
+      <div className={`mt-1 font-display text-[18px] font-bold ${color}`}>{value}</div>
     </div>
   );
 }

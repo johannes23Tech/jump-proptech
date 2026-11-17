@@ -76,10 +76,10 @@ export default function TenantLease() {
           <h2 className="font-display text-[18px] font-bold text-[#252821] mb-4">Tenant Details</h2>
           <div className="space-y-3 text-[13px] text-[#77746a]">
             <div className="flex justify-between"><span>Name</span><span className="font-semibold text-[#252821]">{tenant.firstName} {tenant.lastName}</span></div>
-            <div className="flex justify-between"><span>Phone</span><span className="font-semibold text-[#252821]">{tenant.phoneNumber || "—"}</span></div>
-            <div className="flex justify-between"><span>Email</span><span className="font-semibold text-[#252821]">{tenant.email || "—"}</span></div>
-            <div className="flex justify-between"><span>ID/Passport</span><span className="font-semibold text-[#252821]">{tenant.idNumberOrPassport || "—"}</span></div>
-            <div className="flex justify-between"><span>Employer</span><span className="font-semibold text-[#252821]">{tenant.employer || "—"}</span></div>
+            <div className="flex justify-between"><span>Phone</span><span className="font-semibold text-[#252821]">{tenant.privateProfile?.phoneNumber || "—"}</span></div>
+            <div className="flex justify-between"><span>Email</span><span className="font-semibold text-[#252821]">{tenant.privateProfile?.email || "—"}</span></div>
+            <div className="flex justify-between"><span>ID/Passport</span><span className="font-semibold text-[#252821]">{tenant.privateProfile?.idNumberOrPassport || "—"}</span></div>
+            <div className="flex justify-between"><span>Employer</span><span className="font-semibold text-[#252821]">{tenant.privateProfile?.employer || "—"}</span></div>
           </div>
         </div>
       )}

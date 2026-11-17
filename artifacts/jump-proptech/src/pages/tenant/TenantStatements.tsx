@@ -3,7 +3,6 @@ import { useWorkspace } from "@/state/app";
 import { api } from "@/lib/api";
 import { money } from "@/domain";
 import { jsPDF } from "jspdf";
-import { FileText, Download, Clock } from "lucide-react";
 
 type Period = "1month" | "3months" | "6months" | "12months";
 
@@ -103,7 +102,6 @@ export default function TenantStatements() {
           disabled={loading}
           className="w-full rounded-lg border border-[#e5dfd1] bg-[#faf9f5] px-4 py-3 text-left text-[13px] font-semibold text-[#252821] hover:bg-[#f0ede6] disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <FileText size={16} strokeWidth={2} />
           {loading ? "Loading…" : "Generate Statement"}
         </button>
       </div>
@@ -160,12 +158,11 @@ export default function TenantStatements() {
               disabled={loading}
               className="flex items-center gap-2 rounded-lg bg-[#b79850] px-5 py-3 text-white font-semibold hover:bg-[#9c7b4a] disabled:opacity-50"
             >
-              <Download size={18} strokeWidth={2} />
               Download PDF
             </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
